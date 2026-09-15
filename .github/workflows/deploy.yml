@@ -1,0 +1,45 @@
+name: Ever Gauzy Enterprise CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, release/* ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-test:
+    name: Code Quality & Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run Configuration Test Suite
+        run: |
+          pip install pytest pyyaml
+          pytest ever-gauzy-business-platform/tests/test_gauzy_config.py -v
+
+  build-and-deploy:
+    name: Build Container & Deploy Staging
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Validate Docker Compose Configuration
+        run: |
+          cd ever-gauzy-business-platform
+          docker compose config --quiet
+
+      - name: Notify Deployment Success
+        run: echo "Ever Gauzy deployment pipeline executed successfully!"

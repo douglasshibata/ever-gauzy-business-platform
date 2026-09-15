@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gauzy-server
+  namespace: gauzy
+  labels:
+    app.kubernetes.io/name: gauzy-server
+    app.kubernetes.io/part-of: ever-gauzy-platform
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: gauzy-server
+  template:
+    metadata:
+      labels:
+        app: gauzy-server
+    spec:
+      containers:
+        - name: gauzy-server
+          image: evercoe/gauzy:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http-api
+              containerPort: 3000
+            - name: http-web
+              containerPort: 4200
+          envFrom:
+            - configMapRef:
+                name: gauzy-config
+            - secretRef:
+                name: gauzy-secrets
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "512Mi"
+            limits:
+              cpu: "2000m"
+              memory: "2048Mi"
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 10
